@@ -1,12 +1,30 @@
 import numpy as np
-from PyQt5 import QtGui, QtCore
+# from PyQt5 import QtGui, QtCore
+
+#### DCV Note:
+# I installed C++ Qt on my computer, and there's been an annoying issue with confilicting
+# dlls. I had to modify the Windows PATH variable to include the DLLs to the Qt library
+# so I could run Qt apps, but that would ocassionaly cause conflicts in PyQt.
+# This line tries to intercept when that error occurs, and removes the explicit
+# Qt dll path.
 try:
-    from .fixes import axisItemFix, legendItemFix, ItemSampleFix, PlotItemFix, linearRegionItemFix
+    from PyQt5 import QtGui, QtCore, QtWidgets, uic
+except ImportError:
+    import os
+
+    pth = os.environ["PATH"].split(";")
+    pth.pop([r"c:\qt" in ii.lower() for ii in pth].index(True))
+    os.environ["PATH"] = ";".join(pth)
+    from PyQt5 import QtGui, QtCore, QtWidgets, uic
+
+try:
+    from .fixes import axisItemFix, legendItemFix, ItemSampleFix, PlotItemFix, linearRegionItemFix, CSVExporterFix
 except ImportError as e:
     print(("failed importing axisfixes", e))
     import sys
     print((sys.path))
     raise
+import sys
 import pyqtgraph as pg
 from .packageSettings import config_options
 from .images.imagePlot import image as ipimage
@@ -21,6 +39,7 @@ from .widgets.LabviewSlider import LabviewSlider
 from .widgets.doubleYPlot import DoubleYPlot
 from .widgets.numberEdits import QFNumberEdit, QINumberEdit
 from .items.DateAxis import DateAxis
+from .items.PolarAxisItem import PolarAxis
 pg.setConfigOption("foreground", config_options["foreground"])
 pg.setConfigOption("background", config_options["background"])
 QtGui.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)

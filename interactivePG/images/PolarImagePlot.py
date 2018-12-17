@@ -169,7 +169,14 @@ class PolarImageItem(pg.ImageItem):
                 item.setPen(QtGui.QPen(QtCore.Qt.NoPen))
 
                 innerItems.append(item)
-                self.getViewBox().addItem(item)
+                #
+                # I don't know why, but when a PolarImageItem is added to a pg.ViewBox(),
+                # a lot of calls to ChildrenBounds were being made, which was making
+                # this function take forever. But if I just set the bounds to be ignored,
+                # it resolves this issue.
+                #
+                # It doesn't seem to happen when the vb is an ImageView,
+                self.getViewBox().addItem(item, ignoreBounds=True)
 
             self._paintingPath.append(innerPaths)
             self._paintingPathItems.append(innerItems)
@@ -254,6 +261,7 @@ class PolarImageItem(pg.ImageItem):
                     # painter.fillPath(path, pg.mkBrush(color))
                     item = self._paintingPathItems[ridx][tidx]
                     item.setBrush(pg.mkBrush(color))
+                    item.setPen(pg.mkPen(color))
                     # item.setPen(QtCore.Qt.NoPen)
                     # if color.alpha()!=0:
                     #     painter.strokePath(path, pg.mkPen("k", width=1))
@@ -295,8 +303,14 @@ class PolarImageItem(pg.ImageItem):
             p.drawRect(self.boundingRect())
 
     def mouseClickEvent(self, ev):
-        if self._paintingPath is None: return
 
+        if self._paintingPath is None: return
+        if ev.button() != QtCore.Qt.LeftButton:
+            ev.ignore()
+            return
+        if not self.allowMouseClicks:
+            ev.ignore()
+            return
         try:
             for ridx in range(len(self._paintingPath)):
                 for tidx in range(len(self._paintingPath[ridx])):
