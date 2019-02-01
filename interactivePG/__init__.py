@@ -574,8 +574,7 @@ def manipulate(manipulateArgs, *args, **kwargs):
     Make a Mathematica-style manipulate plot with sliders
     to change the values of a function.
 
-
-        Pass manipulatorArgs as
+    To use, pass manipulatorArgs as
 
         [
             ("name1", lowerBound, upperBound, <startVal>, <step>),
@@ -583,6 +582,39 @@ def manipulate(manipulateArgs, *args, **kwargs):
             ...
         ]
         can optionally pass the first argument as a callback function
+
+    Then, pass a plot
+
+        import numpy as np
+        import interactivePG as pg
+
+        x = np.linspace(0, 2*np.pi)
+        # Define the callback function to update with each value
+        def update(a, b, c):
+            y1 = a * np.sin(x + b)
+            y2 = b * np.sin(x*c*2)
+            return x, y1, y2
+            # Alternate return style where
+            # different x-values are allowed
+            # return np.column_stack((x, y1)),np.column_stack((x, y2))
+
+        # Set up the manipulator arguments, bounds and start values
+        manip = pg.manipulate(
+            [
+                ["a", -5, 5],
+                ["b", -5, 5],
+                ["c", -5, 5]
+            ]
+        )
+        # Plot the curves which should be updated
+        manip.plot(x, update(0, 0, 0)[1], 'k')
+        manip.plot(x, update(0, 0, 0)[2])
+        # Set the callback function _after_ the plots have been done
+        manip.setCallable(update)
+        #Any further plots are not affected by the update
+        manip.plot(x, 0.5*x**2)
+
+        pg.show()
 
     :param manipulateArgs:
     :param args:
@@ -594,7 +626,7 @@ def manipulate(manipulateArgs, *args, **kwargs):
 
 
     window = ManipulateWindow()
-    window.plot(*args, **kwargs)
+    # window.plot(*args, **kwargs)
 
 
 
@@ -604,6 +636,7 @@ def manipulate(manipulateArgs, *args, **kwargs):
     window.show()
 
     plotList["__LAST_FIG"] = window
+    return window
 
 def text(x, y, text, **kwargs):
     text = pg.TextItem(str(text), color=(0,0,0))

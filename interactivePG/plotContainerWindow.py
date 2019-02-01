@@ -290,14 +290,11 @@ class ManipulateWindow(QtGui.QMainWindow):
             slider.sigValueChanging.connect(self.updateCurve)
             self._manipulatorLayout.addWidget(slider, idx, 1)
 
-
-
     def setCallable(self, callback):
         """
         callback function should return a list of values,
         lst[0] is the x values, lst[1:] are the y values, one for each curve to be
         updated
-
 
         ManipulateWindow.plot() must be called witih as many curve which get manipulated
         before a call to setcallable. This allows plotting other functions on top of
@@ -353,7 +350,6 @@ class ManipulateWindow(QtGui.QMainWindow):
         #
         # for idx, curve in enumerate(self._updateCurves):
         #     curve.setData(ret[0], ret[idx+1])
-
         if len(self._updateCurves) == len(ret) - 1:
             # passed as a list where the first element is x, the rest is y
             for idx, curve in enumerate(self._updateCurves):
