@@ -20,6 +20,28 @@ Gradients["rgbSpec"] = {'ticks': [
             ], 'mode': 'rgb'}
 
 
+Gradients["alphas"] = {
+            "mode": "rgb",
+            "ticks": [
+                (0, (0, 0, 0, 255)),
+                (.25, (128, 128, 0, 255)),
+                (.5, (255, 255, 255, 255)),
+                (.75, (0, 128, 0, 255)),
+                (1, (0, 0, 0, 255))
+            ]
+        }
+
+
+Gradients["gammas"] = {
+            "mode": "rgb",
+            "ticks": [
+                (0, (255, 0, 0, 255)),
+                (.5, (255, 255, 255, 255)),
+                (1, (0, 0, 255, 255))
+            ]
+        }
+
+
 class FakePlotWidget(object):
     # stupid hackey way to get this to play nice with the plot container
     pass

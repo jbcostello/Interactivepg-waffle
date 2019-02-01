@@ -1,17 +1,36 @@
 import numpy as np
-from PyQt5 import QtGui, QtCore
+# from PyQt5 import QtGui, QtCore
+
+#### DCV Note:
+# I installed C++ Qt on my computer, and there's been an annoying issue with confilicting
+# dlls. I had to modify the Windows PATH variable to include the DLLs to the Qt library
+# so I could run Qt apps, but that would ocassionaly cause conflicts in PyQt.
+# This line tries to intercept when that error occurs, and removes the explicit
+# Qt dll path.
 try:
-    from .fixes import axisItemFix, legendItemFix, ItemSampleFix, PlotItemFix, linearRegionItemFix
+    from PyQt5 import QtGui, QtCore, QtWidgets, uic
+except ImportError:
+    import os
+
+    pth = os.environ["PATH"].split(";")
+    pth.pop([r"c:\qt" in ii.lower() for ii in pth].index(True))
+    os.environ["PATH"] = ";".join(pth)
+    from PyQt5 import QtGui, QtCore, QtWidgets, uic
+
+try:
+    from .fixes import axisItemFix, legendItemFix, ItemSampleFix, PlotItemFix, linearRegionItemFix, CSVExporterFix
 except ImportError as e:
     print(("failed importing axisfixes", e))
     import sys
     print((sys.path))
     raise
+import sys
 import pyqtgraph as pg
 from .packageSettings import config_options
 from .images.imagePlot import image as ipimage
 from .curves.clickablePlotWidget import ClickablePlotWidget as PlotWidget
 from .curves.PolarizationEllipseItem import PolarizationEllipseItem
+from .curves.PlotDataErrorItem import PlotDataErrorItem
 from .plotContainerWindow import PlotContainerWindow, ManipulateWindow
 from .images.ImageViewWithPlotItemContainer import ImageViewWithPlotItemContainer as ImageView
 from .images.PolarImagePlot import PolarImageItem, PolarImagePlot
@@ -20,9 +39,10 @@ from .widgets.LabviewSlider import LabviewSlider
 from .widgets.doubleYPlot import DoubleYPlot
 from .widgets.numberEdits import QFNumberEdit, QINumberEdit
 from .items.DateAxis import DateAxis
+from .items.PolarAxisItem import PolarAxis
 pg.setConfigOption("foreground", config_options["foreground"])
 pg.setConfigOption("background", config_options["background"])
-
+QtGui.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 
 plotList = {}
 
@@ -97,6 +117,7 @@ def plotxyy(*args, **kwargs):
     where x:= data[:,0] and y[N-1]:= data[:,1:N]
 
     pass kwarg "names" (NOT "name") to give the plots names.
+    pass kwarg "fmts" (NOT "fmt") to give the plots names.
 
     :param args:
     :param kwargs:
@@ -148,8 +169,14 @@ def plotxyy(*args, **kwargs):
     else:
         legend()
 
+
+    fmts = kwargs.pop("fmts", None)
+    if fmts is None:
+        fmts = [None] * y.shape[1]
+
+
     for idx, ydata in enumerate(y.T):
-        plt.plot(x, ydata, *args, name=names[idx], **kwargs)
+        plt.plot(x, ydata, *args, name=names[idx], fmt=fmts[idx], **kwargs)
     return plt
 
 def brazilPlot(*args, **kwargs):
@@ -509,6 +536,8 @@ def exportImage(plotObject, **kwargs):
     :return:
     """
     from pyqtgraph.exporters import ImageExporter as E
+    QtGui.QApplication.processEvents() # Make sure all rendering changes have been
+    # performed.
     if isinstance(plotObject, pg.GraphicsScene):
         scene = plotObject
     elif isinstance(plotObject, PlotContainerWindow):
@@ -544,6 +573,17 @@ def manipulate(manipulateArgs, *args, **kwargs):
     """
     Make a Mathematica-style manipulate plot with sliders
     to change the values of a function.
+
+
+        Pass manipulatorArgs as
+
+        [
+            ("name1", lowerBound, upperBound, <startVal>, <step>),
+            ("name2", lowerBound, upperBound, <startVal>, <step>),
+            ...
+        ]
+        can optionally pass the first argument as a callback function
+
     :param manipulateArgs:
     :param args:
     :param kwargs:
