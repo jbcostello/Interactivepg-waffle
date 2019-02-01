@@ -25,6 +25,16 @@ class PolarAxis(AxisItem):
             "azimuthal": azimuthalBounds
         }
 
+        if self.pOrientation == "radial":
+            self._tickSpacing = 10
+        elif self.pOrientation == "azimuthal":
+            self._tickSpacing = 30
+
+
+        # I want to know what the full bounding rect would be, but
+        # .boundingRect() is overridden to only give the view range
+        self.fullBoundingRect = QtCore.QRectF(0,0,radialBounds[1]*2,radialBounds[1]*2)
+        self.fullBoundingRect.moveCenter(Point(0,0))
 
 
         # At what azimuthal angle should I put the radial axis labels?
@@ -93,14 +103,14 @@ class PolarAxis(AxisItem):
         p.setOpacity(1)
 
     def tickSpacing(self, minVal, maxVal, size):
-        if self.pOrientation is "radial":
-            return [
-                (10, 0),
-                (10, 0)
-            ]
+        # if self.pOrientation is "radial":
+        #     return [
+        #         (10, 0),
+        #         (10, 0)
+        #     ]
         return [
-            (30, 0),
-            (30, 0)
+            (self._tickSpacing, 0),
+            (self._tickSpacing, 0)
         ]
 
     def tickValues(self, minVal, maxVal, size):
@@ -174,6 +184,13 @@ class PolarAxis(AxisItem):
         """
 
         # bounds = self.boundingRect()
+
+        self.fullBoundingRect = QtCore.QRectF(0,0,
+                                      self._bounds["radial"][1]*2,
+                                      self._bounds["radial"][1]*2)
+        self.fullBoundingRect.moveCenter(Point(0,0))
+
+
         bounds = self.mapRectFromParent(self.geometry())
 
         linkedView = self.linkedView()
@@ -311,6 +328,7 @@ class PolarAxis(AxisItem):
             return (axisSpec, tickSpecs, textSpecs)
 
         # For appropriate sizing of boxes
+        if self.tickFont is None: return (axisSpec, tickSpecs, textSpecs)
         p.setFont(self.tickFont)
         for i in range(min(len(tickLevels), self.style['maxTextLevel'] + 1)):
             ## Get the list of strings to display for this level
@@ -389,16 +407,26 @@ class PolarAxis(AxisItem):
 
 
                 if self.pOrientation is "azimuthal":
-                    pp = tickSpecs[j][-1] # Take the outside coordinate
+
+                    # Originally wanted to put the text on the outside of
+                    # the viewbox, but that was breaking things, especially
+                    # because it wasn't handling intialization correctly, when the
+                    # viewbox is first being setup.
+                    #pp = tickSpecs[j][-1] # Take the outside coordinate
+                    pp = self._bounds["radial"][1] if np.isfinite(self._bounds["radial"][1]) else tickSpecs[j][-1]
+                    pp = Point(pp*np.cos(x*3.14159/180), -pp*np.sin(x*3.14159/180))
+
                     rect = QtCore.QRectF(0,0, width, height)
                     rect.moveCenter(Point(0,0))
                     xm = x%360
                     if xm == 0:
                         rect.moveLeft(pp.x())
+                        # print("00pp", pp)
                     elif 0<xm<90:
                         rect.moveBottomLeft(pp)
                     elif xm == 90:
                         rect.moveBottom(pp.y())
+                        # print("90pp", pp)
                     elif 90<xm<180:
                         rect.moveBottomRight(pp)
                     elif xm == 180:
@@ -417,6 +445,7 @@ class PolarAxis(AxisItem):
                     # Don't forget to flip the axis
                         x*np.sin(-self._radialLabelPosition * np.pi / 180)
                     ))
+                self.fullBoundingRect |= rect
 
                 # p.setPen(self.pen())
                 # p.drawText(rect, textFlags, vstr)
